@@ -142,6 +142,12 @@ private:
   /** Abdo Rackwitz current Lagrange multiplier */
   NumericalScalar currentLambda_;
 
+  /** Abdo Rackwitz old point */
+  NumericalPoint oldPoint_;
+
+  /** Abdo Rackwitz old level value */
+  NumericalScalar oldLevelValue_;
+
 }; /* class AbdoRackwitz */
 
 END_NAMESPACE_OPENTURNS

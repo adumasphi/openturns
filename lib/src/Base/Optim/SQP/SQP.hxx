@@ -153,6 +153,12 @@ private:
   /** SQP current Lagrange multiplier */
   NumericalScalar currentLambda_;
 
+  /** SQP old point */
+  NumericalPoint oldPoint_;
+
+  /** SQP old level value */
+  NumericalScalar oldLevelValue_;
+
 }; /* class SQP */
 
 END_NAMESPACE_OPENTURNS

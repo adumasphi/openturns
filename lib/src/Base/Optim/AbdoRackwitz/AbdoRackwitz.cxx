@@ -111,7 +111,8 @@ NumericalScalar AbdoRackwitz::computeLineSearch()
   /* Compute penalized scalar objective function at current point */
   const NumericalScalar currentTheta(0.5 * currentPoint_.normSquare() + currentSigma_ * fabs(currentLevelValue_ - levelValue));
   /* Min bound for step */
-  const NumericalScalar minStep(getMaximumAbsoluteError() / currentDirection_.norm());
+  // const NumericalScalar minStep(getMaximumAbsoluteError() / currentDirection_.norm());
+  const NumericalScalar minStep(std::pow(tau_, 9));
   /* Minimum decrease for the penalized objective function */
   const NumericalScalar levelIncrement(omega_ * dot(currentPoint_ + (currentSigma_ * ((currentLevelValue_ > levelValue) ? 1.0 : -1.0)) * currentGradient_, currentDirection_));
   /* Initialization of the line search */
@@ -120,6 +121,9 @@ NumericalScalar AbdoRackwitz::computeLineSearch()
   NumericalPoint currentStepPoint(NumericalPoint(currentPoint_.getDimension()));
   NumericalScalar currentStepLevelValue;
   NumericalScalar currentStepTheta;
+  NumericalScalar oldBeta(oldPoint_.norm());
+  NumericalScalar currentBeta(currentPoint_.norm());
+  NumericalScalar StepBeta;
   do
   {
     currentStepPoint = currentPoint_ + step * currentDirection_;
@@ -130,6 +134,20 @@ NumericalScalar AbdoRackwitz::computeLineSearch()
     step *= tau_;
   }
   while ((step >= minStep) && ( currentStepTheta > currentTheta + step * levelIncrement));
+  /* Check circuitous iterations */
+  if (oldBeta != 0)
+  {
+    NumericalScalar compareA(dot(oldPoint_, currentStepPoint) / (oldPoint_.norm() * currentStepPoint.norm()));
+    NumericalScalar compareB(dot(currentPoint_, currentStepPoint) / (currentPoint_.norm() * currentStepPoint.norm()));
+    if (compareA > compareB)
+    {
+      StepBeta = (currentBeta * (oldLevelValue_ - levelValue) - oldBeta * (currentLevelValue_ - levelValue)) / (oldLevelValue_ - currentLevelValue_);
+      currentStepPoint = StepBeta * (oldPoint_ + currentPoint_) / (oldPoint_ + currentPoint_).norm();
+      currentStepLevelValue = levelFunction(currentStepPoint)[0];
+    }
+  }
+  oldPoint_ = currentPoint_;
+  oldLevelValue_ = currentLevelValue_;
   currentPoint_ = currentStepPoint;
   currentLevelValue_ = currentStepLevelValue;
   /* We went one step beyond */
@@ -159,6 +177,10 @@ void AbdoRackwitz::run()
 
   /* Compute the level function at the current point -> G */
   currentLevelValue_ = levelFunction(currentPoint_)[0];
+
+  /* initialize old values */
+  NumericalPoint oldPoint_(currentPoint_);
+  NumericalScalar oldLevelValue_(currentLevelValue_);
 
   // reset result
   setResult(OptimizationResult(currentPoint_, NumericalPoint(1, currentLevelValue_), 0, absoluteError, relativeError, residualError, constraintError));
